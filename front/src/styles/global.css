@@ -1,0 +1,227 @@
+:root {
+  color: #162331;
+  background: linear-gradient(135deg, #f3efe3 0%, #dce8f3 55%, #f9f6ef 100%);
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+.button-link {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1.2rem;
+  background: #183b56;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ghost-button {
+  background: rgba(24, 59, 86, 0.08);
+  color: #183b56;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  padding: 2rem 1.4rem;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  border-right: 1px solid rgba(24, 59, 86, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.brand strong {
+  font-size: 1.35rem;
+}
+
+.nav {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.nav-link {
+  padding: 0.8rem 1rem;
+  border-radius: 16px;
+  color: #183b56;
+  text-decoration: none;
+  background: rgba(24, 59, 86, 0.05);
+}
+
+.nav-link.active {
+  background: #183b56;
+  color: #fff;
+}
+
+.content {
+  padding: 2rem;
+}
+
+.topbar,
+.section-head,
+.inline-actions,
+.inline-form {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.topbar {
+  margin-bottom: 1.5rem;
+}
+
+.user-chip {
+  padding: 0.85rem 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.panel,
+.auth-panel,
+.card,
+.sub-panel {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(24, 59, 86, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(24, 59, 86, 0.08);
+}
+
+.panel,
+.sub-panel {
+  padding: 1.4rem;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.auth-panel {
+  width: min(560px, 100%);
+  padding: 1.8rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+input,
+select {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(24, 59, 86, 0.18);
+  background: #fff;
+  padding: 0.85rem 1rem;
+}
+
+.feedback {
+  margin: 1rem 0 0;
+  color: #385067;
+}
+
+.feedback.error {
+  color: #b03a2e;
+}
+
+.card-grid,
+.split-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 1rem;
+}
+
+.card {
+  padding: 1.2rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.split-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.simple-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.simple-list li {
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: rgba(24, 59, 86, 0.05);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.messages li p {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(24, 59, 86, 0.08);
+  }
+
+  .split-layout {
+    grid-template-columns: 1fr;
+  }
+}
