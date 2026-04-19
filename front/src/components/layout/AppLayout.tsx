@@ -2,11 +2,11 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearAuthState, useAuthState } from "../../store/auth-store";
 
 const links = [
-  { to: "/rooms", label: "房间列表" },
-  { to: "/rooms/create", label: "创建房间" },
-  { to: "/rooms/my", label: "我的房间" },
-  { to: "/games", label: "游戏字典" },
-  { to: "/profile", label: "个人资料" }
+  { to: "/rooms", label: "房间" },
+  { to: "/rooms/create", label: "创建" },
+  { to: "/rooms/my", label: "我的" },
+  { to: "/games", label: "游戏" },
+  { to: "/profile", label: "资料" }
 ];
 
 export function AppLayout() {
@@ -15,20 +15,18 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
+      <div className="promo-bar">短信登录、房间组队、实时聊天，全部已接入当前版本。</div>
+
+      <header className="top-nav">
+        <div className="nav-brand">
           <div className="brand-mark">GB</div>
-          <strong>GamingBar</strong>
-          <span>组局、沟通、进房，一套节奏连起来。</span>
-          <small>Play faster. Organize cleaner.</small>
+          <div className="brand-copy">
+            <strong>GamingBar</strong>
+            <small>Join The Room</small>
+          </div>
         </div>
 
-        <div className="sidebar-note">
-          <strong>Live Lobby</strong>
-          <p>让房间、成员、聊天和个人状态在同一个视觉语境里工作。</p>
-        </div>
-
-        <nav className="nav">
+        <nav className="nav nav-horizontal">
           {links.map((link) => (
             <NavLink
               key={link.to}
@@ -40,7 +38,11 @@ export function AppLayout() {
           ))}
         </nav>
 
-        <div className="sidebar-actions">
+        <div className="nav-actions">
+          <div className="user-chip">
+            <small>{auth.status === "authenticated" ? "已登录" : "未登录"}</small>
+            <strong>{auth.user?.nickname ?? "游客"}</strong>
+          </div>
           <button
             className="ghost-button"
             onClick={() => {
@@ -48,28 +50,12 @@ export function AppLayout() {
               navigate("/login");
             }}
           >
-            退出登录
+            退出
           </button>
         </div>
-      </aside>
+      </header>
 
       <main className="content">
-        <header className="topbar">
-          <div>
-            <span className="eyebrow">Matchmaking Dashboard</span>
-            <h1>GamingBar 控制台</h1>
-            <p>现在的界面更强调状态、路径和操作反馈，而不是单纯堆表单。</p>
-          </div>
-
-          <div className="user-chip">
-            <span className={`status-badge ${auth.status === "authenticated" ? "status-authenticated" : "status-guest"}`}>
-              {auth.status === "authenticated" ? "已认证" : "未登录"}
-            </span>
-            <strong>{auth.user?.nickname ?? "访客"}</strong>
-            <small>{auth.user?.phone ?? ""}</small>
-          </div>
-        </header>
-
         <Outlet />
       </main>
     </div>

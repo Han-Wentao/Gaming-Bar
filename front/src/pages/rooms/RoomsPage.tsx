@@ -33,25 +33,30 @@ export function RoomsPage() {
     <section className="page-stack">
       <div className="page-hero hero-panel">
         <div className="hero-copy">
-          <span className="eyebrow">Live Rooms</span>
-          <h2>房间大厅</h2>
-          <p>优先展示可加入房间，并把人数、状态和行动按钮放在同一层视线里。</p>
+          <span className="eyebrow">房间大厅</span>
+          <h2>当前可加入的房间</h2>
+          <p>优先展示仍可加入的房间，方便你快速查看人数、状态和房主信息。</p>
+          <div className="hero-rail">
+            <span className="hero-chip">空位可见</span>
+            <span className="hero-chip">人数直观</span>
+            <span className="hero-chip">支持直接加入</span>
+          </div>
         </div>
         <div className="hero-stats">
           <article className="metric-card">
-            <span className="muted">可见房间</span>
+            <span className="muted">房间总数</span>
             <strong>{rooms.length}</strong>
-            <small>当前返回 20 条以内</small>
+            <small>当前列表返回结果</small>
           </article>
           <article className="metric-card">
             <span className="muted">等待中</span>
             <strong>{waitingCount}</strong>
-            <small>更适合快速加入</small>
+            <small>可以继续加入</small>
           </article>
           <article className="metric-card">
             <span className="muted">已就绪</span>
             <strong>{readyCount}</strong>
-            <small>接近满员</small>
+            <small>接近或已经满员</small>
           </article>
         </div>
       </div>
@@ -59,15 +64,15 @@ export function RoomsPage() {
       <section className="panel">
         <div className="section-head">
           <div>
-            <h3>快速匹配视图</h3>
-            <p>点击详情可以直接进入房间观察；若有空位，也可以在卡片上立即加入。</p>
+            <h3>房间列表</h3>
+            <p>你可以先查看详情，也可以直接加入仍有空位的房间。</p>
           </div>
           <div className="inline-actions">
             <button className="ghost-button" onClick={() => void loadRooms()}>
               刷新
             </button>
             <Link to="/rooms/create" className="button-link">
-              创建新房间
+              创建房间
             </Link>
           </div>
         </div>
@@ -83,7 +88,7 @@ export function RoomsPage() {
                   <strong>{room.game_name}</strong>
                 </div>
                 <span className={`status-badge ${room.status === "ready" ? "status-ready" : "status-waiting"}`}>
-                  {room.status}
+                  {room.status === "ready" ? "已就绪" : "等待中"}
                 </span>
               </div>
 
@@ -100,7 +105,7 @@ export function RoomsPage() {
 
               <div className="occupancy">
                 <div className="meta-row">
-                  <span>席位占用</span>
+                  <span>人数</span>
                   <span className="meta-strong">
                     {room.current_player}/{room.max_player}
                   </span>
@@ -132,7 +137,7 @@ export function RoomsPage() {
           ))}
         </div>
 
-        {rooms.length === 0 ? <div className="empty-state">当前没有可展示的有效房间。</div> : null}
+        {rooms.length === 0 ? <div className="empty-state">当前没有可展示的房间。</div> : null}
       </section>
     </section>
   );

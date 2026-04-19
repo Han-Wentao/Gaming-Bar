@@ -58,10 +58,11 @@ export function RoomDetailPage() {
     <section className="page-stack room-stage">
       <div className="detail-banner">
         <div className="hero-copy">
-          <span className="eyebrow">Room Focus</span>
+          <span className="eyebrow">房间详情</span>
           <h2>{room.game_name}</h2>
           <p>
-            房主 {room.owner_nickname} · 当前 {room.current_player}/{room.max_player} · 状态 {room.status}
+            房主 {room.owner_nickname} · 当前人数 {room.current_player}/{room.max_player} · 状态{" "}
+            {room.status === "ready" ? "已就绪" : "等待中"}
           </p>
         </div>
 
@@ -69,15 +70,15 @@ export function RoomDetailPage() {
           <article className="metric-card">
             <span className="muted">类型</span>
             <strong>{room.type}</strong>
-            <small>{room.start_time ? `开始于 ${room.start_time}` : "即开局模式"}</small>
+            <small>{room.start_time ? `开始时间：${room.start_time}` : "即时开局"}</small>
           </article>
           <article className="metric-card">
-            <span className="muted">我的权限</span>
+            <span className="muted">我的身份</span>
             <strong>{room.is_owner ? "房主" : room.is_joined ? "成员" : "访客"}</strong>
-            <small>权限与成员身份保持一致</small>
+            <small>只有成员可以查看完整内容</small>
           </article>
           <article className="metric-card">
-            <span className="muted">成员数</span>
+            <span className="muted">成员数量</span>
             <strong>{room.members.length}</strong>
             <small>按加入顺序展示</small>
           </article>
@@ -129,8 +130,8 @@ export function RoomDetailPage() {
         <div className="sub-panel">
           <div className="section-head">
             <div>
-              <h3>成员面板</h3>
-              <p>给成员列表加了更接近社交产品的头像占位和角色节奏。</p>
+              <h3>成员列表</h3>
+              <p>当前房间中的成员会显示在这里。</p>
             </div>
           </div>
 
@@ -150,8 +151,8 @@ export function RoomDetailPage() {
         <div className="sub-panel">
           <div className="section-head">
             <div>
-              <h3>聊天区</h3>
-              <p>聊天消息做成纵向节奏条，视觉上更像实时房间，而不是普通表单列表。</p>
+              <h3>聊天消息</h3>
+              <p>房间成员可以查看历史消息并继续发送聊天内容。</p>
             </div>
           </div>
 
@@ -171,7 +172,7 @@ export function RoomDetailPage() {
             <textarea
               value={content}
               onChange={(event) => setContent(event.target.value)}
-              placeholder="输入 1-500 字消息，向当前房间广播你的想法..."
+              placeholder="输入 1 到 500 字消息..."
             />
             <div className="inline-actions">
               <button type="submit">发送消息</button>

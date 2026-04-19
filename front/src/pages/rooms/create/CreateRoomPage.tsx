@@ -43,25 +43,25 @@ export function CreateRoomPage() {
     <section className="page-stack">
       <div className="page-hero hero-panel">
         <div className="hero-copy">
-          <span className="eyebrow">Create Session</span>
-          <h2>创建房间</h2>
-          <p>把玩法、人数和开局方式收拢成一套更像“场景编排器”的录入体验。</p>
+          <span className="eyebrow">创建房间</span>
+          <h2>发起新的组队</h2>
+          <p>选择游戏、人数和开局方式后即可创建房间，并进入详情页面。</p>
         </div>
         <div className="hero-stats">
           <article className="metric-card">
-            <span className="muted">游戏来源</span>
+            <span className="muted">可选游戏</span>
             <strong>{games.length}</strong>
-            <small>接口返回可选项</small>
+            <small>来自当前接口数据</small>
           </article>
           <article className="metric-card">
             <span className="muted">默认人数</span>
             <strong>{maxPlayer}</strong>
-            <small>可在 2 到 10 间调整</small>
+            <small>可在 2 到 10 之间调整</small>
           </article>
           <article className="metric-card">
             <span className="muted">开局方式</span>
             <strong>{type}</strong>
-            <small>即时或预约</small>
+            <small>{type === "instant" ? "即时开局" : "预约开局"}</small>
           </article>
         </div>
       </div>
@@ -70,14 +70,14 @@ export function CreateRoomPage() {
         <article className="panel">
           <div className="section-head">
             <div>
-              <h3>房间配置</h3>
-              <p>接口约束已经内置在表单逻辑里，`instant` 不会提交 `start_time`。</p>
+              <h3>房间设置</h3>
+              <p>即时房间无需填写开始时间，预约房间则需要填写计划开始时间。</p>
             </div>
           </div>
 
           <form className="form-grid" onSubmit={handleSubmit}>
             <label>
-              <span className="label-caption">选择游戏</span>
+              <span className="label-caption">游戏</span>
               <select value={gameId} onChange={(event) => setGameId(Number(event.target.value))}>
                 {games.map((game) => (
                   <option key={game.id} value={game.id}>
@@ -127,23 +127,22 @@ export function CreateRoomPage() {
 
         <aside className="panel">
           <div className="hero-copy">
-            <span className="eyebrow">Builder Notes</span>
-            <h3>创建策略</h3>
-            <p>这个侧栏不只用来说明，而是帮用户在提交前确认自己在创建什么样的局。</p>
+            <span className="eyebrow">创建提示</span>
+            <h3>使用建议</h3>
           </div>
 
           <ul className="simple-list">
             <li>
               <strong>即时房间</strong>
-              <span>适合马上开局，省掉时间输入，动作更直接。</span>
+              <span>适合马上开局，不需要额外填写时间。</span>
             </li>
             <li>
               <strong>预约房间</strong>
-              <span>适合提前约人，保留时间字段，方便组织节奏。</span>
+              <span>适合提前约人，便于成员确认开始时间。</span>
             </li>
             <li>
-              <strong>人数上限</strong>
-              <span>人数越小越容易凑齐，人数越大越适合社交型场景。</span>
+              <strong>人数设置</strong>
+              <span>请根据你的组队规模调整房间人数上限。</span>
             </li>
           </ul>
         </aside>

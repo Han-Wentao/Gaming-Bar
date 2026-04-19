@@ -28,7 +28,7 @@ function AuthBootstrapOutlet() {
   }, []);
 
   if (auth.status === "unknown") {
-    return <FullPageState message="正在验证登录状态..." />;
+    return <FullPageState message="正在验证登录状态，请稍候..." />;
   }
 
   return <Outlet />;
@@ -38,7 +38,7 @@ function AuthGuard() {
   const auth = useAuthState();
 
   if (auth.status === "unknown") {
-    return <FullPageState message="正在验证登录状态..." />;
+    return <FullPageState message="正在验证登录状态，请稍候..." />;
   }
 
   return auth.status === "authenticated" ? <AppLayout /> : <Navigate to="/login" replace />;
@@ -48,7 +48,7 @@ function LoginGuard() {
   const auth = useAuthState();
 
   if (auth.status === "unknown") {
-    return <FullPageState message="正在验证登录状态..." />;
+    return <FullPageState message="正在验证登录状态，请稍候..." />;
   }
 
   return auth.status === "authenticated" ? <Navigate to="/rooms" replace /> : <LoginPage />;

@@ -34,25 +34,25 @@ export function ProfilePage() {
     <section className="page-stack">
       <div className="page-hero hero-panel">
         <div className="hero-copy">
-          <span className="eyebrow">Identity</span>
-          <h2>个人资料</h2>
-          <p>这里强调的是身份观感。除了表单本身，也给用户一个更完整的资料预览区域。</p>
+          <span className="eyebrow">个人资料</span>
+          <h2>账号信息</h2>
+          <p>在这里修改昵称和头像链接，保存后会立即同步到当前登录状态。</p>
         </div>
         <div className="hero-stats">
           <article className="metric-card">
             <span className="muted">昵称长度</span>
             <strong>{nickname.length}</strong>
-            <small>建议 2 到 20 字符</small>
+            <small>建议 2 到 20 个字符</small>
           </article>
           <article className="metric-card">
             <span className="muted">头像链接</span>
-            <strong>{avatar ? "已设置" : "空"}</strong>
-            <small>支持 http/https</small>
+            <strong>{avatar ? "已设置" : "未设置"}</strong>
+            <small>支持 http / https</small>
           </article>
           <article className="metric-card">
-            <span className="muted">当前账号</span>
+            <span className="muted">账号 ID</span>
             <strong>{auth.user?.id ?? "--"}</strong>
-            <small>服务端身份为准</small>
+            <small>以服务端返回为准</small>
           </article>
         </div>
       </div>
@@ -61,8 +61,8 @@ export function ProfilePage() {
         <article className="panel">
           <div className="section-head">
             <div>
-              <h3>资料编辑</h3>
-              <p>提交后会同步刷新本地认证缓存，避免资料展示滞后。</p>
+              <h3>编辑资料</h3>
+              <p>昵称和头像更新后，房间内看到的身份信息也会同步刷新。</p>
             </div>
           </div>
 
@@ -87,8 +87,8 @@ export function ProfilePage() {
 
         <aside className="panel">
           <div className="hero-copy">
-            <span className="eyebrow">Preview</span>
-            <h3>个人卡片预览</h3>
+            <span className="eyebrow">资料预览</span>
+            <h3>当前展示</h3>
           </div>
 
           <ul className="simple-list">
@@ -102,7 +102,7 @@ export function ProfilePage() {
             </li>
             <li>
               <strong>头像链接</strong>
-              <span>{avatar || "未设置头像 URL"}</span>
+              <span>{avatar || "未设置头像链接"}</span>
             </li>
             <li>
               <strong>信用分</strong>
