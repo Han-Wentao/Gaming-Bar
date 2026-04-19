@@ -4,6 +4,10 @@ import { listMessages, sendMessage } from "../../../api/modules/message";
 import { dissolveRoom, getRoomDetail, joinRoom, leaveRoom } from "../../../api/modules/room";
 import type { Message, RoomDetail } from "../../../types/models";
 
+function getInitial(name: string) {
+  return name.trim().slice(0, 1).toUpperCase() || "?";
+}
+
 export function RoomDetailPage() {
   const navigate = useNavigate();
   const { roomId = "" } = useParams();
@@ -51,19 +55,46 @@ export function RoomDetailPage() {
   }
 
   return (
-    <section className="panel">
-      <div className="section-head">
-        <div>
+    <section className="page-stack room-stage">
+      <div className="detail-banner">
+        <div className="hero-copy">
+          <span className="eyebrow">Room Focus</span>
           <h2>{room.game_name}</h2>
           <p>
-            房主 {room.owner_nickname} · 人数 {room.current_player}/{room.max_player} · 状态 {room.status}
+            房主 {room.owner_nickname} · 当前 {room.current_player}/{room.max_player} · 状态 {room.status}
           </p>
         </div>
-        <div className="inline-actions">
-          <button onClick={() => void loadAll()}>刷新</button>
-          {!room.is_joined ? <button onClick={() => void joinRoom(roomId).then(loadAll).catch((e: Error) => setMessage(e.message))}>加入房间</button> : null}
+
+        <div className="stats-grid">
+          <article className="metric-card">
+            <span className="muted">类型</span>
+            <strong>{room.type}</strong>
+            <small>{room.start_time ? `开始于 ${room.start_time}` : "即开局模式"}</small>
+          </article>
+          <article className="metric-card">
+            <span className="muted">我的权限</span>
+            <strong>{room.is_owner ? "房主" : room.is_joined ? "成员" : "访客"}</strong>
+            <small>权限与成员身份保持一致</small>
+          </article>
+          <article className="metric-card">
+            <span className="muted">成员数</span>
+            <strong>{room.members.length}</strong>
+            <small>按加入顺序展示</small>
+          </article>
+        </div>
+
+        <div className="detail-actions">
+          <button className="ghost-button" onClick={() => void loadAll()}>
+            刷新
+          </button>
+          {!room.is_joined ? (
+            <button onClick={() => void joinRoom(roomId).then(loadAll).catch((e: Error) => setMessage(e.message))}>
+              加入房间
+            </button>
+          ) : null}
           {room.is_joined ? (
             <button
+              className="ghost-button"
               onClick={() =>
                 void leaveRoom(roomId)
                   .then((result) => {
@@ -81,6 +112,7 @@ export function RoomDetailPage() {
           ) : null}
           {room.is_owner ? (
             <button
+              className="danger-button"
               onClick={() =>
                 void dissolveRoom(roomId)
                   .then(() => navigate("/rooms"))
@@ -95,31 +127,55 @@ export function RoomDetailPage() {
 
       <div className="split-layout">
         <div className="sub-panel">
-          <h3>成员</h3>
-          <ul className="simple-list">
+          <div className="section-head">
+            <div>
+              <h3>成员面板</h3>
+              <p>给成员列表加了更接近社交产品的头像占位和角色节奏。</p>
+            </div>
+          </div>
+
+          <ul className="simple-list member-list">
             {room.members.map((member) => (
               <li key={member.user_id}>
-                <strong>{member.nickname}</strong>
-                <span>{member.join_time}</span>
+                <div className="avatar-dot">{getInitial(member.nickname)}</div>
+                <div className="member-copy">
+                  <strong>{member.nickname}</strong>
+                  <span>{member.join_time}</span>
+                </div>
               </li>
             ))}
           </ul>
         </div>
 
         <div className="sub-panel">
-          <h3>聊天</h3>
-          <ul className="simple-list messages">
+          <div className="section-head">
+            <div>
+              <h3>聊天区</h3>
+              <p>聊天消息做成纵向节奏条，视觉上更像实时房间，而不是普通表单列表。</p>
+            </div>
+          </div>
+
+          <ul className="simple-list messages message-list">
             {messages.map((item) => (
               <li key={item.id}>
-                <strong>{item.nickname}</strong>
-                <p>{item.content}</p>
-                <span>{item.create_time}</span>
+                <div className="message-copy">
+                  <strong>{item.nickname}</strong>
+                  <p>{item.content}</p>
+                  <span>{item.create_time}</span>
+                </div>
               </li>
             ))}
           </ul>
-          <form className="inline-form" onSubmit={handleSend}>
-            <input value={content} onChange={(event) => setContent(event.target.value)} placeholder="输入 1-500 字消息" />
-            <button type="submit">发送</button>
+
+          <form className="chat-compose" onSubmit={handleSend}>
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="输入 1-500 字消息，向当前房间广播你的想法..."
+            />
+            <div className="inline-actions">
+              <button type="submit">发送消息</button>
+            </div>
           </form>
         </div>
       </div>

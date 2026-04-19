@@ -27,6 +27,10 @@ function unwrapResponse<T>(response: AxiosResponse<ApiResponse<T>>) {
 }
 
 function handleError(error: unknown): Promise<never> {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    clearAuthState();
+  }
+
   const message = axios.isAxiosError(error)
     ? error.response?.data?.message ?? error.message ?? "请求失败"
     : "请求失败";

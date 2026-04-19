@@ -264,6 +264,11 @@ public class RoomServiceImpl implements RoomService {
             throw new BusinessException(404, "房间不存在或已失效");
         }
 
+        RoomUser membership = roomUserMapper.selectByRoomIdAndUserId(roomId, userId);
+        if (membership == null) {
+            throw new BusinessException(403, "鎮ㄤ笉鍦ㄨ鎴块棿涓?");
+        }
+
         Game game = gameMapper.selectById(room.getGameId());
         User owner = userMapper.selectById(room.getOwnerId());
         List<RoomUser> members = new ArrayList<>(roomUserMapper.selectByRoomId(roomId));
@@ -284,7 +289,6 @@ public class RoomServiceImpl implements RoomService {
             })
             .toList();
 
-        boolean joined = roomUserMapper.selectByRoomIdAndUserId(roomId, userId) != null;
         return new RoomDetailVo(
             room.getId(),
             room.getGameId(),
@@ -299,7 +303,7 @@ public class RoomServiceImpl implements RoomService {
             TimeUtils.format(room.getCreateTime()),
             TimeUtils.format(room.getUpdateTime()),
             room.getOwnerId().equals(userId),
-            joined,
+            true,
             memberVos
         );
     }

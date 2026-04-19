@@ -24,7 +24,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "app.jwt.secret=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+})
 @AutoConfigureMockMvc
 class ApiIntegrationTest {
 
@@ -173,6 +175,18 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/rooms/{roomId}", expiredRoomId).header("Authorization", bearer(token)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(404));
+    }
+
+    @Test
+    void shouldRejectRoomDetailForNonMembers() throws Exception {
+        String ownerToken = login("13800000004");
+        String outsiderToken = login("13800000005");
+
+        long roomId = createRoom(ownerToken, 4);
+
+        mockMvc.perform(get("/api/rooms/{roomId}", roomId).header("Authorization", bearer(outsiderToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(403));
     }
 
     private String login(String phone) throws Exception {
