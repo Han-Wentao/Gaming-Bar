@@ -7,6 +7,7 @@ export type AuthStatus = "unknown" | "authenticated" | "guest";
 type AuthState = {
   status: AuthStatus;
   token: string | null;
+  refreshToken: string | null;
   user: User | null;
 };
 
@@ -18,21 +19,22 @@ let bootstrapPromise: Promise<void> | null = null;
 function loadInitialState(): AuthState {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
-    return { status: "guest", token: null, user: null };
+    return { status: "guest", token: null, refreshToken: null, user: null };
   }
 
   try {
     const parsed = JSON.parse(raw) as Partial<AuthState>;
     if (typeof parsed.token !== "string" || !parsed.token.trim()) {
-      return { status: "guest", token: null, user: null };
+      return { status: "guest", token: null, refreshToken: null, user: null };
     }
     return {
       status: "unknown",
       token: parsed.token,
+      refreshToken: typeof parsed.refreshToken === "string" && parsed.refreshToken.trim() ? parsed.refreshToken : null,
       user: isUserLike(parsed.user) ? parsed.user : null
     };
   } catch {
-    return { status: "guest", token: null, user: null };
+    return { status: "guest", token: null, refreshToken: null, user: null };
   }
 }
 
@@ -63,18 +65,18 @@ export function setAuthState(nextState: Omit<AuthState, "status">) {
   persist({ ...nextState, status: "authenticated" });
 }
 
-export function setAuthPending(token: string, user: User | null = null) {
-  persist({ status: "unknown", token, user });
+export function setAuthPending(token: string, refreshToken: string | null, user: User | null = null) {
+  persist({ status: "unknown", token, refreshToken, user });
 }
 
 export function setGuestState() {
   localStorage.removeItem(STORAGE_KEY);
-  state = { status: "guest", token: null, user: null };
+  state = { status: "guest", token: null, refreshToken: null, user: null };
   emit();
 }
 
-export function setAuthenticatedState(token: string, user: User) {
-  persist({ status: "authenticated", token, user });
+export function setAuthenticatedState(token: string, refreshToken: string | null, user: User) {
+  persist({ status: "authenticated", token, refreshToken, user });
 }
 
 export function bootstrapAuth() {
@@ -89,7 +91,7 @@ export function bootstrapAuth() {
           setGuestState();
           return;
         }
-        setAuthenticatedState(state.token, user);
+        setAuthenticatedState(state.token, state.refreshToken, user);
       })
       .catch(() => {
         setGuestState();

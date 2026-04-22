@@ -1,5 +1,6 @@
 package com.gamingbar.service.impl;
 
+import com.gamingbar.common.enums.ErrorCode;
 import com.gamingbar.common.exception.BusinessException;
 import com.gamingbar.common.result.PageData;
 import com.gamingbar.common.util.TimeUtils;
@@ -13,7 +14,9 @@ import com.gamingbar.mapper.GameMapper;
 import com.gamingbar.mapper.RoomMapper;
 import com.gamingbar.mapper.RoomUserMapper;
 import com.gamingbar.mapper.UserMapper;
+import com.gamingbar.service.RoomCacheService;
 import com.gamingbar.service.RoomCleanupService;
+import com.gamingbar.service.RoomRealtimeService;
 import com.gamingbar.service.RoomService;
 import com.gamingbar.vo.room.LeaveRoomResponseVo;
 import com.gamingbar.vo.room.RoomDetailVo;
@@ -29,9 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class RoomServiceImpl implements RoomService {
 
@@ -40,17 +46,23 @@ public class RoomServiceImpl implements RoomService {
     private final UserMapper userMapper;
     private final GameMapper gameMapper;
     private final RoomCleanupService roomCleanupService;
+    private final RoomCacheService roomCacheService;
+    private final RoomRealtimeService roomRealtimeService;
 
     public RoomServiceImpl(RoomMapper roomMapper,
                            RoomUserMapper roomUserMapper,
                            UserMapper userMapper,
                            GameMapper gameMapper,
-                           RoomCleanupService roomCleanupService) {
+                           RoomCleanupService roomCleanupService,
+                           RoomCacheService roomCacheService,
+                           RoomRealtimeService roomRealtimeService) {
         this.roomMapper = roomMapper;
         this.roomUserMapper = roomUserMapper;
         this.userMapper = userMapper;
         this.gameMapper = gameMapper;
         this.roomCleanupService = roomCleanupService;
+        this.roomCacheService = roomCacheService;
+        this.roomRealtimeService = roomRealtimeService;
     }
 
     @Override
@@ -62,7 +74,7 @@ public class RoomServiceImpl implements RoomService {
 
         userMapper.selectByIdForUpdate(userId);
         cleanupUserExpiredRooms(userId);
-        ValidationUtils.require(findValidUserRooms(userId).isEmpty(), 409, "您已在其他未关闭房间中");
+        ValidationUtils.require(findValidUserRooms(userId).isEmpty(), ErrorCode.CONFLICT.getCode(), "您已在其他未关闭房间中");
 
         Room room = new Room();
         room.setGameId(request.getGameId());
@@ -72,6 +84,7 @@ public class RoomServiceImpl implements RoomService {
         room.setType(request.getType());
         room.setStartTime(parseStartTime(request));
         room.setStatus("waiting");
+        room.setVersion(0L);
         roomMapper.insert(room);
 
         RoomUser roomUser = new RoomUser();
@@ -79,6 +92,8 @@ public class RoomServiceImpl implements RoomService {
         roomUser.setUserId(userId);
         roomUserMapper.insert(roomUser);
 
+        roomCacheService.evictHotRooms();
+        log.info("Room created, roomId={}, ownerId={}", room.getId(), userId);
         return loadRoomDetail(userId, room.getId());
     }
 
@@ -87,19 +102,61 @@ public class RoomServiceImpl implements RoomService {
         validateListFilters(gameId, type, status, page, size, false);
         int pageValue = page == null ? 1 : page;
         int sizeValue = size == null ? 20 : size;
+        int offset = (pageValue - 1) * sizeValue;
 
-        cleanupExpiredRooms(roomMapper.selectNonClosedRooms());
-        List<Room> rooms = roomMapper.selectNonClosedRooms().stream()
-            .filter(room -> "waiting".equals(room.getStatus()) || "ready".equals(room.getStatus()))
-            .filter(room -> gameId == null || gameId.equals(room.getGameId()))
-            .filter(room -> type == null || type.equals(room.getType()))
-            .filter(room -> status == null || status.equals(room.getStatus()))
-            .toList();
+        List<Room> rooms = roomMapper.selectPage(gameId, type, status, offset, sizeValue);
+        cleanupExpiredRooms(rooms);
+        long total = roomMapper.countPage(gameId, type, status);
+        Set<Long> joinedRoomIds = findValidUserRooms(userId).stream().map(Room::getId).collect(Collectors.toSet());
 
-        List<RoomListItemVo> items = rooms.stream()
-            .map(room -> toRoomListItemVo(userId, room))
+        return new PageData<>(total, pageValue, sizeValue, toRoomListItemVos(rooms, joinedRoomIds));
+    }
+
+    @Override
+    public List<RoomListItemVo> listHotRooms(Long userId, Integer limit) {
+        int safeLimit = limit == null ? 5 : Math.max(1, Math.min(limit, 20));
+        Set<Long> joinedRoomIds = findValidUserRooms(userId).stream().map(Room::getId).collect(Collectors.toSet());
+
+        List<RoomListItemVo> cached = roomCacheService.getHotRooms();
+        if (!cached.isEmpty()) {
+            return cached.stream()
+                .limit(safeLimit)
+                .map(item -> new RoomListItemVo(
+                    item.getId(),
+                    item.getGameId(),
+                    item.getGameName(),
+                    item.getOwnerId(),
+                    item.getOwnerNickname(),
+                    item.getMaxPlayer(),
+                    item.getCurrentPlayer(),
+                    item.getType(),
+                    item.getStartTime(),
+                    item.getStatus(),
+                    item.getCreateTime(),
+                    joinedRoomIds.contains(item.getId())
+                ))
+                .toList();
+        }
+
+        List<Room> hotRooms = roomMapper.selectHotRooms(safeLimit);
+        List<RoomListItemVo> snapshots = toRoomListItemVos(hotRooms, Set.of());
+        roomCacheService.cacheHotRooms(snapshots);
+        return snapshots.stream()
+            .map(item -> new RoomListItemVo(
+                item.getId(),
+                item.getGameId(),
+                item.getGameName(),
+                item.getOwnerId(),
+                item.getOwnerNickname(),
+                item.getMaxPlayer(),
+                item.getCurrentPlayer(),
+                item.getType(),
+                item.getStartTime(),
+                item.getStatus(),
+                item.getCreateTime(),
+                joinedRoomIds.contains(item.getId())
+            ))
             .toList();
-        return paginate(items, pageValue, sizeValue);
     }
 
     @Override
@@ -117,30 +174,44 @@ public class RoomServiceImpl implements RoomService {
 
         List<Room> userRooms = findValidUserRooms(userId);
         boolean inOtherRoom = userRooms.stream().anyMatch(room -> !room.getId().equals(roomId));
-        ValidationUtils.require(!inOtherRoom, 409, "您已在其他未关闭房间中");
-
-        Room room = roomMapper.selectByIdForUpdate(roomId);
-        if (room == null || "closed".equals(room.getStatus())) {
-            throw new BusinessException(404, "房间不存在或已失效");
-        }
-        if (roomCleanupService.isExpired(room)) {
-            roomCleanupService.closeRoom(roomId);
-            throw new BusinessException(404, "房间不存在或已失效");
-        }
+        ValidationUtils.require(!inOtherRoom, ErrorCode.CONFLICT.getCode(), "您已在其他未关闭房间中");
         if (roomUserMapper.selectByRoomIdAndUserId(roomId, userId) != null || userRooms.stream().anyMatch(item -> item.getId().equals(roomId))) {
-            throw new BusinessException(409, "您已在该房间中");
-        }
-        if (room.getCurrentPlayer() >= room.getMaxPlayer()) {
-            throw new BusinessException(409, "房间已满，无法加入");
+            throw new BusinessException(ErrorCode.CONFLICT, "您已在该房间中");
         }
 
-        RoomUser roomUser = new RoomUser();
-        roomUser.setRoomId(roomId);
-        roomUser.setUserId(userId);
-        roomUserMapper.insert(roomUser);
-        int currentPlayer = roomUserMapper.countByRoomId(roomId);
-        roomMapper.updatePlayerAndStatus(roomId, currentPlayer, currentPlayer >= room.getMaxPlayer() ? "ready" : "waiting");
-        return loadRoomDetail(userId, roomId);
+        for (int attempt = 0; attempt < 10; attempt++) {
+            Room room = roomMapper.selectById(roomId);
+            ensureJoinableRoom(roomId, room);
+            if (room.getCurrentPlayer() >= room.getMaxPlayer()) {
+                throw new BusinessException(ErrorCode.CONFLICT, "房间已满，无法加入");
+            }
+
+            int nextPlayer = room.getCurrentPlayer() + 1;
+            int updated = roomMapper.updatePlayerAndStatus(
+                roomId,
+                room.getVersion(),
+                nextPlayer,
+                nextPlayer >= room.getMaxPlayer() ? "ready" : "waiting"
+            );
+            if (updated == 0) {
+                continue;
+            }
+
+            try {
+                RoomUser roomUser = new RoomUser();
+                roomUser.setRoomId(roomId);
+                roomUser.setUserId(userId);
+                roomUserMapper.insert(roomUser);
+            } catch (DataIntegrityViolationException exception) {
+                throw new BusinessException(ErrorCode.CONFLICT, "当前账号已在其他房间中");
+            }
+
+            roomCacheService.evictHotRooms();
+            log.info("User joined room, roomId={}, userId={}, currentPlayer={}", roomId, userId, nextPlayer);
+            return loadRoomDetail(userId, roomId);
+        }
+
+        throw new BusinessException(ErrorCode.CONFLICT, "房间状态已变化，请重试");
     }
 
     @Override
@@ -148,17 +219,11 @@ public class RoomServiceImpl implements RoomService {
     public LeaveRoomResponseVo leaveRoom(Long userId, Long roomId) {
         ValidationUtils.positive(roomId);
         Room room = roomMapper.selectByIdForUpdate(roomId);
-        if (room == null || "closed".equals(room.getStatus())) {
-            throw new BusinessException(404, "房间不存在或已失效");
-        }
-        if (roomCleanupService.isExpired(room)) {
-            roomCleanupService.closeRoom(roomId);
-            throw new BusinessException(404, "房间不存在或已失效");
-        }
+        ensureRoomExists(roomId, room);
 
         RoomUser roomUser = roomUserMapper.selectByRoomIdAndUserId(roomId, userId);
         if (roomUser == null) {
-            throw new BusinessException(403, "您不在该房间中");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "您不在该房间中");
         }
 
         if (room.getOwnerId().equals(userId)) {
@@ -168,7 +233,15 @@ public class RoomServiceImpl implements RoomService {
 
         roomUserMapper.deleteByRoomIdAndUserId(roomId, userId);
         int currentPlayer = roomUserMapper.countByRoomId(roomId);
-        roomMapper.updatePlayerAndStatus(roomId, currentPlayer, currentPlayer < room.getMaxPlayer() ? "waiting" : "ready");
+        roomMapper.updatePlayerAndStatus(
+            roomId,
+            room.getVersion(),
+            currentPlayer,
+            currentPlayer < room.getMaxPlayer() ? "waiting" : "ready"
+        );
+        roomRealtimeService.disconnectUserSessions(roomId, userId, "left_room");
+        roomCacheService.evictHotRooms();
+        log.info("User left room, roomId={}, userId={}", roomId, userId);
         return new LeaveRoomResponseVo("left");
     }
 
@@ -178,15 +251,16 @@ public class RoomServiceImpl implements RoomService {
         ValidationUtils.positive(roomId);
         Room room = roomMapper.selectByIdForUpdate(roomId);
         if (room == null) {
-            throw new BusinessException(404, "房间不存在或已失效");
+            throw new BusinessException(ErrorCode.NOT_FOUND);
         }
         if ("closed".equals(room.getStatus())) {
             return;
         }
         if (!room.getOwnerId().equals(userId)) {
-            throw new BusinessException(403, "仅房主可解散房间");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "仅房主可解散房间");
         }
         roomCleanupService.closeRoom(roomId);
+        log.info("Room dissolved, roomId={}, ownerId={}", roomId, userId);
     }
 
     @Override
@@ -194,14 +268,12 @@ public class RoomServiceImpl implements RoomService {
         validateListFilters(null, null, status, page, size, true);
         int pageValue = page == null ? 1 : page;
         int sizeValue = size == null ? 20 : size;
+        int offset = (pageValue - 1) * sizeValue;
 
         cleanupUserExpiredRooms(userId);
-        List<RoomMyItemVo> items = findValidUserRooms(userId).stream()
-            .filter(room -> "waiting".equals(room.getStatus()) || "ready".equals(room.getStatus()))
-            .filter(room -> status == null || status.equals(room.getStatus()))
-            .map(room -> toRoomMyItemVo(userId, room))
-            .toList();
-        return paginate(items, pageValue, sizeValue);
+        List<Room> rooms = roomMapper.selectMyPage(userId, status, offset, sizeValue);
+        long total = roomMapper.countMyPage(userId, status);
+        return new PageData<>(total, pageValue, sizeValue, toRoomMyItemVos(userId, rooms));
     }
 
     private void validateCreateRequest(CreateRoomRequest request) {
@@ -254,19 +326,33 @@ public class RoomServiceImpl implements RoomService {
             .toList();
     }
 
-    private RoomDetailVo loadRoomDetail(Long userId, Long roomId) {
-        Room room = roomMapper.selectById(roomId);
+    private void ensureJoinableRoom(Long roomId, Room room) {
         if (room == null || "closed".equals(room.getStatus())) {
-            throw new BusinessException(404, "房间不存在或已失效");
+            throw new BusinessException(ErrorCode.NOT_FOUND);
         }
         if (roomCleanupService.isExpired(room)) {
-            roomCleanupService.cleanupIfExpired(roomId);
-            throw new BusinessException(404, "房间不存在或已失效");
+            roomCleanupService.closeRoom(roomId);
+            throw new BusinessException(ErrorCode.NOT_FOUND);
         }
+    }
+
+    private void ensureRoomExists(Long roomId, Room room) {
+        if (room == null || "closed".equals(room.getStatus())) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        if (roomCleanupService.isExpired(room)) {
+            roomCleanupService.closeRoom(roomId);
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+    }
+
+    private RoomDetailVo loadRoomDetail(Long userId, Long roomId) {
+        Room room = roomMapper.selectById(roomId);
+        ensureRoomExists(roomId, room);
 
         RoomUser membership = roomUserMapper.selectByRoomIdAndUserId(roomId, userId);
         if (membership == null) {
-            throw new BusinessException(403, "鎮ㄤ笉鍦ㄨ鎴块棿涓?");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "您不在该房间中");
         }
 
         Game game = gameMapper.selectById(room.getGameId());
@@ -297,6 +383,7 @@ public class RoomServiceImpl implements RoomService {
             owner == null ? "" : owner.getNickname(),
             room.getMaxPlayer(),
             room.getCurrentPlayer(),
+            roomCacheService.getOnlineCount(roomId),
             room.getType(),
             TimeUtils.format(room.getStartTime()),
             room.getStatus(),
@@ -308,42 +395,54 @@ public class RoomServiceImpl implements RoomService {
         );
     }
 
-    private RoomListItemVo toRoomListItemVo(Long userId, Room room) {
-        Map<Integer, Game> gameMap = toGameMap(Set.of(room.getGameId()));
-        Map<Long, User> userMap = toUserMap(Set.of(room.getOwnerId()));
-        return new RoomListItemVo(
-            room.getId(),
-            room.getGameId(),
-            gameMap.get(room.getGameId()).getGameName(),
-            room.getOwnerId(),
-            userMap.get(room.getOwnerId()).getNickname(),
-            room.getMaxPlayer(),
-            room.getCurrentPlayer(),
-            room.getType(),
-            TimeUtils.format(room.getStartTime()),
-            room.getStatus(),
-            TimeUtils.format(room.getCreateTime()),
-            roomUserMapper.selectByRoomIdAndUserId(room.getId(), userId) != null
-        );
+    private List<RoomListItemVo> toRoomListItemVos(List<Room> rooms, Set<Long> joinedRoomIds) {
+        List<Room> validRooms = rooms.stream()
+            .filter(room -> !"closed".equals(room.getStatus()))
+            .filter(room -> !roomCleanupService.isExpired(room))
+            .toList();
+        Map<Integer, Game> gameMap = toGameMap(validRooms.stream().map(Room::getGameId).collect(Collectors.toSet()));
+        Map<Long, User> userMap = toUserMap(validRooms.stream().map(Room::getOwnerId).collect(Collectors.toSet()));
+        return validRooms.stream()
+            .map(room -> new RoomListItemVo(
+                room.getId(),
+                room.getGameId(),
+                gameMap.get(room.getGameId()) == null ? "" : gameMap.get(room.getGameId()).getGameName(),
+                room.getOwnerId(),
+                userMap.get(room.getOwnerId()) == null ? "" : userMap.get(room.getOwnerId()).getNickname(),
+                room.getMaxPlayer(),
+                room.getCurrentPlayer(),
+                room.getType(),
+                TimeUtils.format(room.getStartTime()),
+                room.getStatus(),
+                TimeUtils.format(room.getCreateTime()),
+                joinedRoomIds.contains(room.getId())
+            ))
+            .toList();
     }
 
-    private RoomMyItemVo toRoomMyItemVo(Long userId, Room room) {
-        Map<Integer, Game> gameMap = toGameMap(Set.of(room.getGameId()));
-        Map<Long, User> userMap = toUserMap(Set.of(room.getOwnerId()));
-        return new RoomMyItemVo(
-            room.getId(),
-            room.getGameId(),
-            gameMap.get(room.getGameId()).getGameName(),
-            room.getOwnerId(),
-            userMap.get(room.getOwnerId()).getNickname(),
-            room.getMaxPlayer(),
-            room.getCurrentPlayer(),
-            room.getType(),
-            TimeUtils.format(room.getStartTime()),
-            room.getStatus(),
-            TimeUtils.format(room.getCreateTime()),
-            room.getOwnerId().equals(userId)
-        );
+    private List<RoomMyItemVo> toRoomMyItemVos(Long userId, List<Room> rooms) {
+        List<Room> validRooms = rooms.stream()
+            .filter(room -> !"closed".equals(room.getStatus()))
+            .filter(room -> !roomCleanupService.isExpired(room))
+            .toList();
+        Map<Integer, Game> gameMap = toGameMap(validRooms.stream().map(Room::getGameId).collect(Collectors.toSet()));
+        Map<Long, User> userMap = toUserMap(validRooms.stream().map(Room::getOwnerId).collect(Collectors.toSet()));
+        return validRooms.stream()
+            .map(room -> new RoomMyItemVo(
+                room.getId(),
+                room.getGameId(),
+                gameMap.get(room.getGameId()) == null ? "" : gameMap.get(room.getGameId()).getGameName(),
+                room.getOwnerId(),
+                userMap.get(room.getOwnerId()) == null ? "" : userMap.get(room.getOwnerId()).getNickname(),
+                room.getMaxPlayer(),
+                room.getCurrentPlayer(),
+                room.getType(),
+                TimeUtils.format(room.getStartTime()),
+                room.getStatus(),
+                TimeUtils.format(room.getCreateTime()),
+                room.getOwnerId().equals(userId)
+            ))
+            .toList();
     }
 
     private Map<Long, User> toUserMap(Set<Long> ids) {
@@ -368,22 +467,11 @@ public class RoomServiceImpl implements RoomService {
         return map;
     }
 
-    private <T> PageData<T> paginate(List<T> items, int page, int size) {
-        int fromIndex = Math.min((page - 1) * size, items.size());
-        int toIndex = Math.min(fromIndex + size, items.size());
-        return new PageData<>(
-            items.size(),
-            page,
-            size,
-            items.subList(fromIndex, toIndex)
-        );
-    }
-
     private LocalDateTime parseRequiredDateTime(String value) {
         try {
             return TimeUtils.parse(value);
         } catch (Exception exception) {
-            throw new BusinessException(400, "参数不合法");
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
     }
 }

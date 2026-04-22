@@ -1,11 +1,13 @@
 package com.gamingbar.service.impl;
 
+import com.gamingbar.common.util.TimeUtils;
 import com.gamingbar.entity.Room;
 import com.gamingbar.mapper.MessageMapper;
 import com.gamingbar.mapper.RoomMapper;
 import com.gamingbar.mapper.RoomUserMapper;
+import com.gamingbar.service.RoomCacheService;
 import com.gamingbar.service.RoomCleanupService;
-import com.gamingbar.common.util.TimeUtils;
+import com.gamingbar.service.RoomRealtimeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,13 +17,19 @@ public class RoomCleanupServiceImpl implements RoomCleanupService {
     private final RoomMapper roomMapper;
     private final RoomUserMapper roomUserMapper;
     private final MessageMapper messageMapper;
+    private final RoomCacheService roomCacheService;
+    private final RoomRealtimeService roomRealtimeService;
 
     public RoomCleanupServiceImpl(RoomMapper roomMapper,
                                   RoomUserMapper roomUserMapper,
-                                  MessageMapper messageMapper) {
+                                  MessageMapper messageMapper,
+                                  RoomCacheService roomCacheService,
+                                  RoomRealtimeService roomRealtimeService) {
         this.roomMapper = roomMapper;
         this.roomUserMapper = roomUserMapper;
         this.messageMapper = messageMapper;
+        this.roomCacheService = roomCacheService;
+        this.roomRealtimeService = roomRealtimeService;
     }
 
     @Override
@@ -60,5 +68,8 @@ public class RoomCleanupServiceImpl implements RoomCleanupService {
         roomMapper.closeRoom(roomId, "closed", 0);
         roomUserMapper.deleteByRoomId(roomId);
         messageMapper.deleteByRoomId(roomId);
+        roomCacheService.evictHotRooms();
+        roomCacheService.setOnlineCount(roomId, 0);
+        roomRealtimeService.closeRoomSessions(roomId, "room_closed");
     }
 }

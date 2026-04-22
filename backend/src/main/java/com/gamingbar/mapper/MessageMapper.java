@@ -29,14 +29,14 @@ public interface MessageMapper {
         <script>
         select * from t_message
         where room_id = #{roomId}
-        <if test='beforeId != null'>
-            and id &lt; #{beforeId}
+        <if test='cursor != null'>
+            and id &lt; #{cursor}
         </if>
         order by id desc
         limit #{limit}
         </script>
         """)
     List<Message> selectMessages(@Param("roomId") Long roomId,
-                                 @Param("beforeId") Long beforeId,
+                                 @Param("cursor") Long cursor,
                                  @Param("limit") Integer limit);
 }

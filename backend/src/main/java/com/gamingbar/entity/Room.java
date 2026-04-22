@@ -14,6 +14,7 @@ public class Room {
     private String type;
     private LocalDateTime startTime;
     private String status;
+    private Long version;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

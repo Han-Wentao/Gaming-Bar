@@ -6,6 +6,7 @@ import com.gamingbar.dto.message.SendMessageRequest;
 import com.gamingbar.service.MessageService;
 import com.gamingbar.vo.message.MessagePageResponseVo;
 import com.gamingbar.vo.message.MessageVo;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,14 +26,16 @@ public class MessageController {
     }
 
     @PostMapping
-    public ApiResponse<MessageVo> sendMessage(@PathVariable Long roomId, @RequestBody SendMessageRequest request) {
+    public ApiResponse<MessageVo> sendMessage(@PathVariable Long roomId, @Valid @RequestBody SendMessageRequest request) {
         return ApiResponse.success(messageService.sendMessage(UserContext.getUserId(), roomId, request));
     }
 
     @GetMapping
     public ApiResponse<MessagePageResponseVo> listMessages(@PathVariable Long roomId,
+                                                           @RequestParam(required = false) Long cursor,
                                                            @RequestParam(required = false) Long beforeId,
                                                            @RequestParam(required = false) Integer size) {
-        return ApiResponse.success(messageService.listMessages(UserContext.getUserId(), roomId, beforeId, size));
+        Long actualCursor = cursor == null ? beforeId : cursor;
+        return ApiResponse.success(messageService.listMessages(UserContext.getUserId(), roomId, actualCursor, size));
     }
 }

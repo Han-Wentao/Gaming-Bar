@@ -27,6 +27,7 @@ export interface RoomDetail {
   owner_nickname: string;
   max_player: number;
   current_player: number;
+  online_count: number;
   type: string;
   start_time: string | null;
   status: string;
@@ -79,5 +80,21 @@ export interface Message {
 
 export interface MessagePageResponse {
   has_more: boolean;
+  next_cursor: number | null;
   messages: Message[];
+}
+
+export interface RoomSocketUser {
+  user_id: number;
+  nickname: string;
+  avatar: string;
+}
+
+export interface RoomSocketEvent {
+  type: "connected" | "member_online" | "member_offline" | "chat_message" | "pong" | "room_closed" | "left_room" | "error";
+  room_id: number;
+  online_count: number;
+  message: Message | null;
+  user: RoomSocketUser | null;
+  text: string | null;
 }

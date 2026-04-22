@@ -1,21 +1,33 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { logout } from "../../api/modules/auth";
 import { clearAuthState, useAuthState } from "../../store/auth-store";
 
 const links = [
-  { to: "/rooms", label: "房间" },
-  { to: "/rooms/create", label: "创建" },
-  { to: "/rooms/my", label: "我的" },
-  { to: "/games", label: "游戏" },
-  { to: "/profile", label: "资料" }
+  { to: "/rooms", label: "Rooms" },
+  { to: "/rooms/create", label: "Create" },
+  { to: "/rooms/my", label: "My Rooms" },
+  { to: "/games", label: "Games" },
+  { to: "/profile", label: "Profile" }
 ];
 
 export function AppLayout() {
   const auth = useAuthState();
   const navigate = useNavigate();
 
+  async function handleLogout() {
+    try {
+      await logout(auth.refreshToken ? { refresh_token: auth.refreshToken } : undefined);
+    } catch {
+      // Ignore logout API errors and clear local state anyway.
+    } finally {
+      clearAuthState();
+      navigate("/login");
+    }
+  }
+
   return (
     <div className="app-shell">
-      <div className="promo-bar">短信登录、房间组队、实时聊天，全部已接入当前版本。</div>
+      <div className="promo-bar">SMS login, room matchmaking, and realtime chat are now wired into the latest backend.</div>
 
       <header className="top-nav">
         <div className="nav-brand">
@@ -40,17 +52,11 @@ export function AppLayout() {
 
         <div className="nav-actions">
           <div className="user-chip">
-            <small>{auth.status === "authenticated" ? "已登录" : "未登录"}</small>
-            <strong>{auth.user?.nickname ?? "游客"}</strong>
+            <small>{auth.status === "authenticated" ? "Logged in" : "Guest"}</small>
+            <strong>{auth.user?.nickname ?? "Visitor"}</strong>
           </div>
-          <button
-            className="ghost-button"
-            onClick={() => {
-              clearAuthState();
-              navigate("/login");
-            }}
-          >
-            退出
+          <button className="ghost-button" onClick={() => void handleLogout()}>
+            Log out
           </button>
         </div>
       </header>

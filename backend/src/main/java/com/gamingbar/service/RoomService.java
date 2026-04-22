@@ -6,12 +6,15 @@ import com.gamingbar.vo.room.LeaveRoomResponseVo;
 import com.gamingbar.vo.room.RoomDetailVo;
 import com.gamingbar.vo.room.RoomListItemVo;
 import com.gamingbar.vo.room.RoomMyItemVo;
+import java.util.List;
 
 public interface RoomService {
 
     RoomDetailVo createRoom(Long userId, CreateRoomRequest request);
 
     PageData<RoomListItemVo> listRooms(Long userId, Integer gameId, String type, String status, Integer page, Integer size);
+
+    List<RoomListItemVo> listHotRooms(Long userId, Integer limit);
 
     RoomDetailVo getRoomDetail(Long userId, Long roomId);
 

@@ -1,14 +1,17 @@
 package com.gamingbar.common.exception;
 
+import com.gamingbar.common.enums.ErrorCode;
 import com.gamingbar.common.result.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,16 +27,17 @@ public class GlobalExceptionHandler {
         HttpMessageNotReadableException.class
     })
     public ApiResponse<Void> handleBadRequest(Exception exception) {
-        return ApiResponse.failure(400, "参数不合法");
+        return ApiResponse.failure(ErrorCode.BAD_REQUEST.getCode(), ErrorCode.BAD_REQUEST.getMessage());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ApiResponse<Void> handleNotFound(NoResourceFoundException exception) {
-        return ApiResponse.failure(404, "资源不存在或已失效");
+        return ApiResponse.failure(ErrorCode.NOT_FOUND.getCode(), ErrorCode.NOT_FOUND.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ApiResponse<Void> handleOther(Exception exception) {
-        return ApiResponse.failure(500, "服务器内部错误");
+        log.error("Unhandled server exception", exception);
+        return ApiResponse.failure(ErrorCode.SERVER_ERROR.getCode(), ErrorCode.SERVER_ERROR.getMessage());
     }
 }

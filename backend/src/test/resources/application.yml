@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:gamingbar;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;NON_KEYWORDS=USER
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    time-zone: Asia/Shanghai
+  mvc:
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+app:
+  cache:
+    provider: in-memory
+  jwt:
+    expire-seconds: 604800
+    refresh-expire-seconds: 2592000
+  sms:
+    provider: mock
+    expire-seconds: 300
+    resend-interval-seconds: 60
+    send-limit-window-seconds: 300
+    send-limit-max-times: 5
+  security:
+    login-fail-window-seconds: 1800
+    login-fail-max-times: 5
+    trust-forwarded-client-ip: false
+  room:
+    hot-cache-seconds: 30
+    online-cache-seconds: 7200
+  websocket:
+    allowed-origin-patterns: "*"
+    heartbeat-timeout-ms: 60000
+    heartbeat-check-ms: 30000

@@ -15,6 +15,7 @@ public class RoomDetailVo {
     private String ownerNickname;
     private Integer maxPlayer;
     private Integer currentPlayer;
+    private Integer onlineCount;
     private String type;
     private String startTime;
     private String status;

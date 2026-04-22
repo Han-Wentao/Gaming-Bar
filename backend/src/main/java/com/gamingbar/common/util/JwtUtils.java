@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtUtils {
 
+    private static final String SESSION_VERSION_CLAIM = "sv";
+
     private final SecretKey secretKey;
     private final long expireSeconds;
 
@@ -22,10 +24,11 @@ public class JwtUtils {
         this.expireSeconds = expireSeconds;
     }
 
-    public String generateToken(Long userId) {
+    public String generateToken(Long userId, String sessionVersion) {
         Instant now = Instant.now();
         return Jwts.builder()
             .subject(String.valueOf(userId))
+            .claim(SESSION_VERSION_CLAIM, sessionVersion)
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plusSeconds(expireSeconds)))
             .signWith(secretKey)
@@ -33,12 +36,24 @@ public class JwtUtils {
     }
 
     public Long parseUserId(String token) {
-        Claims claims = Jwts.parser()
+        Claims claims = parseClaims(token);
+        return claims.getSubject() == null ? null : Long.parseLong(claims.getSubject());
+    }
+
+    public Instant parseExpireAt(String token) {
+        return parseClaims(token).getExpiration().toInstant();
+    }
+
+    public String parseSessionVersion(String token) {
+        return parseClaims(token).get(SESSION_VERSION_CLAIM, String.class);
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
             .verifyWith(secretKey)
             .build()
             .parseSignedClaims(token)
             .getPayload();
-        return Long.parseLong(claims.getSubject());
     }
 
     public long getExpireSeconds() {

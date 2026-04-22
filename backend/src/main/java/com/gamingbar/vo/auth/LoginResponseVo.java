@@ -9,6 +9,7 @@ import lombok.Data;
 public class LoginResponseVo {
 
     private String token;
+    private String refreshToken;
     private Long expiresIn;
     private UserVo user;
 }

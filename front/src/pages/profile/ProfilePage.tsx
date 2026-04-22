@@ -14,7 +14,7 @@ export function ProfilePage() {
       .then((user) => {
         setNickname(user.nickname);
         setAvatar(user.avatar);
-        setAuthState({ token: auth.token, user });
+        setAuthState({ token: auth.token, refreshToken: auth.refreshToken, user });
       })
       .catch((error: Error) => setMessage(error.message));
   }, []);
@@ -23,8 +23,8 @@ export function ProfilePage() {
     event.preventDefault();
     try {
       const user = await updateProfile({ nickname, avatar });
-      setAuthState({ token: auth.token, user });
-      setMessage("资料已更新。");
+      setAuthState({ token: auth.token, refreshToken: auth.refreshToken, user });
+      setMessage("Profile updated.");
     } catch (error) {
       setMessage((error as Error).message);
     }
@@ -34,25 +34,25 @@ export function ProfilePage() {
     <section className="page-stack">
       <div className="page-hero hero-panel">
         <div className="hero-copy">
-          <span className="eyebrow">个人资料</span>
-          <h2>账号信息</h2>
-          <p>在这里修改昵称和头像链接，保存后会立即同步到当前登录状态。</p>
+          <span className="eyebrow">Profile</span>
+          <h2>Account Details</h2>
+          <p>Changes here sync back into the active session and are reflected anywhere your profile is shown.</p>
         </div>
         <div className="hero-stats">
           <article className="metric-card">
-            <span className="muted">昵称长度</span>
+            <span className="muted">Nickname Length</span>
             <strong>{nickname.length}</strong>
-            <small>建议 2 到 20 个字符</small>
+            <small>Recommended: 2 to 20 characters.</small>
           </article>
           <article className="metric-card">
-            <span className="muted">头像链接</span>
-            <strong>{avatar ? "已设置" : "未设置"}</strong>
-            <small>支持 http / https</small>
+            <span className="muted">Avatar</span>
+            <strong>{avatar ? "Configured" : "Not Set"}</strong>
+            <small>Supports `http` and `https` links.</small>
           </article>
           <article className="metric-card">
-            <span className="muted">账号 ID</span>
+            <span className="muted">Account ID</span>
             <strong>{auth.user?.id ?? "--"}</strong>
-            <small>以服务端返回为准</small>
+            <small>Uses the latest value returned by the backend.</small>
           </article>
         </div>
       </div>
@@ -61,24 +61,24 @@ export function ProfilePage() {
         <article className="panel">
           <div className="section-head">
             <div>
-              <h3>编辑资料</h3>
-              <p>昵称和头像更新后，房间内看到的身份信息也会同步刷新。</p>
+              <h3>Edit Profile</h3>
+              <p>Nickname and avatar changes will appear in room membership and chat history views.</p>
             </div>
           </div>
 
           <form className="form-grid" onSubmit={handleSubmit}>
             <label>
-              <span className="label-caption">昵称</span>
+              <span className="label-caption">Nickname</span>
               <input value={nickname} onChange={(event) => setNickname(event.target.value)} />
             </label>
 
             <label>
-              <span className="label-caption">头像 URL</span>
+              <span className="label-caption">Avatar URL</span>
               <input value={avatar} onChange={(event) => setAvatar(event.target.value)} placeholder="https://..." />
             </label>
 
             <div className="inline-actions">
-              <button type="submit">保存资料</button>
+              <button type="submit">Save Changes</button>
             </div>
           </form>
 
@@ -87,25 +87,25 @@ export function ProfilePage() {
 
         <aside className="panel">
           <div className="hero-copy">
-            <span className="eyebrow">资料预览</span>
-            <h3>当前展示</h3>
+            <span className="eyebrow">Preview</span>
+            <h3>Current Snapshot</h3>
           </div>
 
           <ul className="simple-list">
             <li>
-              <strong>昵称</strong>
-              <span>{nickname || "未填写昵称"}</span>
+              <strong>Nickname</strong>
+              <span>{nickname || "Not provided"}</span>
             </li>
             <li>
-              <strong>手机号</strong>
-              <span>{auth.user?.phone ?? "未获取"}</span>
+              <strong>Phone</strong>
+              <span>{auth.user?.phone ?? "Unavailable"}</span>
             </li>
             <li>
-              <strong>头像链接</strong>
-              <span>{avatar || "未设置头像链接"}</span>
+              <strong>Avatar URL</strong>
+              <span>{avatar || "Not provided"}</span>
             </li>
             <li>
-              <strong>信用分</strong>
+              <strong>Credit Score</strong>
               <span>{auth.user?.credit_score ?? "--"}</span>
             </li>
           </ul>

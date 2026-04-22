@@ -1,1 +1,3 @@
+com\gamingbar\ApiIntegrationTest$LoginTokens.class
 com\gamingbar\ApiIntegrationTest.class
+com\gamingbar\RoomConcurrencyTest.class

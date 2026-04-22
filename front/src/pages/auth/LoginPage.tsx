@@ -7,14 +7,14 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("13812345678");
   const [code, setCode] = useState("");
-  const [message, setMessage] = useState("请输入手机号并获取验证码后登录。");
+  const [message, setMessage] = useState("Enter your phone number, request a code, then sign in.");
   const [loading, setLoading] = useState(false);
 
   async function handleSendSms() {
     try {
       setLoading(true);
       const result = await sendSms({ phone });
-      setMessage(`验证码已发送，有效期 ${result.expires_in} 秒。`);
+      setMessage(`Verification code sent. It will expire in ${result.expires_in} seconds.`);
     } catch (error) {
       setMessage((error as Error).message);
     } finally {
@@ -27,7 +27,7 @@ export function LoginPage() {
     try {
       setLoading(true);
       const result = await login({ phone, code });
-      setAuthState({ token: result.token, user: result.user });
+      setAuthState({ token: result.token, refreshToken: result.refresh_token, user: result.user });
       navigate("/rooms");
     } catch (error) {
       setMessage((error as Error).message);
@@ -40,52 +40,52 @@ export function LoginPage() {
     <div className="auth-page">
       <div className="auth-grid">
         <section className="auth-showcase panel">
-          <span className="eyebrow">欢迎使用</span>
-          <h1>开始你的组局</h1>
-          <p>快速进入房间大厅，查看可加入的房间，并和队友保持实时沟通。</p>
+          <span className="eyebrow">Welcome</span>
+          <h1>Start Your Next Match</h1>
+          <p>Browse open rooms, find teammates fast, and switch into realtime chat as soon as you join.</p>
 
           <div className="hero-rail">
-            <span className="hero-chip">快速找房</span>
-            <span className="hero-chip">即时沟通</span>
-            <span className="hero-chip">创建房间</span>
+            <span className="hero-chip">Discover Rooms</span>
+            <span className="hero-chip">Realtime Chat</span>
+            <span className="hero-chip">Create Sessions</span>
           </div>
 
           <div className="auth-summary">
             <article className="auth-summary-card">
-              <strong>房间大厅</strong>
-              <p>随时查看可加入的房间和当前人数。</p>
+              <strong>Room Lobby</strong>
+              <p>See active rooms, owners, and current player counts before joining.</p>
             </article>
             <article className="auth-summary-card">
-              <strong>成员聊天</strong>
-              <p>加入房间后即可查看消息并继续沟通。</p>
+              <strong>Team Coordination</strong>
+              <p>Room members can load history and continue conversations over the realtime channel.</p>
             </article>
           </div>
         </section>
 
         <section className="auth-panel panel">
           <div className="hero-copy">
-            <span className="eyebrow">短信登录</span>
-            <h2>验证码登录</h2>
-            <p>登录后将自动验证会话状态，确保访问页面和接口时身份一致。</p>
+            <span className="eyebrow">SMS Sign In</span>
+            <h2>Verify And Continue</h2>
+            <p>Login now returns both an access token and a refresh token so the session can rotate safely.</p>
           </div>
 
           <form className="form-grid" onSubmit={handleSubmit}>
             <label>
-              <span className="label-caption">手机号</span>
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="请输入 11 位手机号" />
+              <span className="label-caption">Phone</span>
+              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Enter an 11-digit phone number" />
             </label>
 
             <label>
-              <span className="label-caption">验证码</span>
-              <input value={code} onChange={(event) => setCode(event.target.value)} placeholder="请输入 6 位验证码" />
+              <span className="label-caption">Code</span>
+              <input value={code} onChange={(event) => setCode(event.target.value)} placeholder="Enter the 6-digit code" />
             </label>
 
             <div className="auth-actions">
-              <button type="button" className="ghost-button" onClick={handleSendSms} disabled={loading}>
-                发送验证码
+              <button type="button" className="ghost-button" onClick={() => void handleSendSms()} disabled={loading}>
+                Send Code
               </button>
               <button type="submit" disabled={loading}>
-                立即登录
+                Sign In
               </button>
             </div>
           </form>

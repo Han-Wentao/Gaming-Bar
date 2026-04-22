@@ -35,7 +35,7 @@ public interface SmsCodeMapper {
     @Update("""
         update t_sms_code
         set used_status = 1, used_time = #{usedTime}
-        where id = #{id}
+        where id = #{id} and used_status = 0
         """)
     int markUsed(@Param("id") Long id, @Param("usedTime") LocalDateTime usedTime);
 }

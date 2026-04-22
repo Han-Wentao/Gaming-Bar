@@ -9,6 +9,8 @@ import com.gamingbar.vo.room.LeaveRoomResponseVo;
 import com.gamingbar.vo.room.RoomDetailVo;
 import com.gamingbar.vo.room.RoomListItemVo;
 import com.gamingbar.vo.room.RoomMyItemVo;
+import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +31,7 @@ public class RoomController {
     }
 
     @PostMapping
-    public ApiResponse<RoomDetailVo> createRoom(@RequestBody CreateRoomRequest request) {
+    public ApiResponse<RoomDetailVo> createRoom(@Valid @RequestBody CreateRoomRequest request) {
         return ApiResponse.success(roomService.createRoom(UserContext.getUserId(), request));
     }
 
@@ -40,6 +42,11 @@ public class RoomController {
                                                            @RequestParam(required = false) Integer page,
                                                            @RequestParam(required = false) Integer size) {
         return ApiResponse.success(roomService.listRooms(UserContext.getUserId(), gameId, type, status, page, size));
+    }
+
+    @GetMapping("/hot")
+    public ApiResponse<List<RoomListItemVo>> listHotRooms(@RequestParam(required = false) Integer limit) {
+        return ApiResponse.success(roomService.listHotRooms(UserContext.getUserId(), limit));
     }
 
     @GetMapping("/my")

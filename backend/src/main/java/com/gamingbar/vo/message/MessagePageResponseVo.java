@@ -9,5 +9,6 @@ import lombok.Data;
 public class MessagePageResponseVo {
 
     private Boolean hasMore;
+    private Long nextCursor;
     private List<MessageVo> messages;
 }

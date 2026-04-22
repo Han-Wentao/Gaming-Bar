@@ -2,7 +2,9 @@ package com.gamingbar.common.config;
 
 import com.gamingbar.security.AuthInterceptor;
 import java.util.List;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -20,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
             .addPathPatterns("/api/**")
-            .excludePathPatterns(List.of("/api/auth/login", "/api/auth/sms/send"));
+            .excludePathPatterns(List.of("/api/auth/login", "/api/auth/sms/send", "/api/auth/refresh"));
     }
 
     @Override
@@ -29,5 +31,10 @@ public class WebConfig implements WebMvcConfigurer {
             .allowedOriginPatterns("*")
             .allowedMethods("*")
             .allowedHeaders("*");
+    }
+
+    @Bean
+    public static MethodValidationPostProcessor methodValidationPostProcessor() {
+        return new MethodValidationPostProcessor();
     }
 }

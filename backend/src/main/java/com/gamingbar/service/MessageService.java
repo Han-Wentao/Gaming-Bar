@@ -8,5 +8,5 @@ public interface MessageService {
 
     MessageVo sendMessage(Long userId, Long roomId, SendMessageRequest request);
 
-    MessagePageResponseVo listMessages(Long userId, Long roomId, Long beforeId, Integer size);
+    MessagePageResponseVo listMessages(Long userId, Long roomId, Long cursor, Integer size);
 }

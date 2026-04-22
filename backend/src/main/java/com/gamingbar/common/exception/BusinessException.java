@@ -1,5 +1,6 @@
 package com.gamingbar.common.exception;
 
+import com.gamingbar.common.enums.ErrorCode;
 import lombok.Getter;
 
 @Getter
@@ -10,5 +11,13 @@ public class BusinessException extends RuntimeException {
     public BusinessException(int code, String message) {
         super(message);
         this.code = code;
+    }
+
+    public BusinessException(ErrorCode errorCode) {
+        this(errorCode.getCode(), errorCode.getMessage());
+    }
+
+    public BusinessException(ErrorCode errorCode, String message) {
+        this(errorCode.getCode(), message);
     }
 }

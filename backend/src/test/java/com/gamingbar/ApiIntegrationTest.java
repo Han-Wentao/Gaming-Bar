@@ -189,7 +189,68 @@ class ApiIntegrationTest {
             .andExpect(jsonPath("$.code").value(403));
     }
 
+    @Test
+    void shouldRotateAccessTokenOnRefreshAndInvalidateSessionOnLogout() throws Exception {
+        LoginTokens loginTokens = loginTokens("13800000006");
+
+        mockMvc.perform(get("/api/auth/me").header("Authorization", bearer(loginTokens.accessToken())))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+
+        MvcResult refreshResult = mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "refresh_token": "%s"
+                    }
+                    """.formatted(loginTokens.refreshToken())))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andReturn();
+
+        JsonNode refreshBody = readBody(refreshResult).path("data");
+        String refreshedAccessToken = refreshBody.path("token").asText();
+        String refreshedRefreshToken = refreshBody.path("refresh_token").asText();
+
+        mockMvc.perform(get("/api/auth/me").header("Authorization", bearer(loginTokens.accessToken())))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(401));
+
+        mockMvc.perform(get("/api/auth/me").header("Authorization", bearer(refreshedAccessToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+
+        mockMvc.perform(post("/api/auth/logout")
+                .header("Authorization", bearer(refreshedAccessToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "refresh_token": "%s"
+                    }
+                    """.formatted(refreshedRefreshToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+
+        mockMvc.perform(get("/api/auth/me").header("Authorization", bearer(refreshedAccessToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(401));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "refresh_token": "%s"
+                    }
+                    """.formatted(refreshedRefreshToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(401));
+    }
+
     private String login(String phone) throws Exception {
+        return loginTokens(phone).accessToken();
+    }
+
+    private LoginTokens loginTokens(String phone) throws Exception {
         mockMvc.perform(post("/api/auth/sms/send")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"phone\":\"" + phone + "\"}"))
@@ -207,7 +268,11 @@ class ApiIntegrationTest {
             .andReturn();
 
         JsonNode root = readBody(result);
-        return root.path("data").path("token").asText();
+        JsonNode data = root.path("data");
+        return new LoginTokens(
+            data.path("token").asText(),
+            data.path("refresh_token").asText()
+        );
     }
 
     private long createRoom(String token, int maxPlayer) throws Exception {
@@ -233,5 +298,8 @@ class ApiIntegrationTest {
 
     private String bearer(String token) {
         return "Bearer " + token;
+    }
+
+    private record LoginTokens(String accessToken, String refreshToken) {
     }
 }

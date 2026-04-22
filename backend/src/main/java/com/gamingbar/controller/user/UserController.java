@@ -5,6 +5,7 @@ import com.gamingbar.common.result.ApiResponse;
 import com.gamingbar.dto.user.UpdateProfileRequest;
 import com.gamingbar.service.UserService;
 import com.gamingbar.vo.user.UserVo;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +22,7 @@ public class UserController {
     }
 
     @PutMapping("/profile")
-    public ApiResponse<UserVo> updateProfile(@RequestBody UpdateProfileRequest request) {
+    public ApiResponse<UserVo> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return ApiResponse.success(userService.updateProfile(UserContext.getUserId(), request));
     }
 }
